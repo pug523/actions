@@ -8,11 +8,9 @@ inputs:
     required: true
   arch:
     required: true
-  cc:
-    required: true
-  cxx:
-    required: true
   build_type:
+    required: true
+  llvm_version:
     required: true
 
 runs:
@@ -68,7 +66,7 @@ runs:
       uses: pug523/install-llvm-action@233ad1a2ce9110f71dcf05c2cce4780bbeafd2f1
       with:
         # https://github.com/pug523/install-llvm-action/blob/master/assets.json
-        version: 22.1.8
+        version: ${{ inputs.llvm_version }}
 
     - name: Setup environment variables
       shell: bash
