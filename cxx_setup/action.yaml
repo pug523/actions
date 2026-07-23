@@ -65,10 +65,10 @@ runs:
         project-path: .
 
     - name: Install LLVM tools
-      uses: KyleMayes/install-llvm-action@ebc0426251bc40c7cd31162802432c68818ab8f0
+      uses: pug523/install-llvm-action@233ad1a2ce9110f71dcf05c2cce4780bbeafd2f1
       with:
-        # https://github.com/KyleMayes/install-llvm-action/blob/master/assets.json
-        version: 21.1.8
+        # https://github.com/pug523/install-llvm-action/blob/master/assets.json
+        version: 22.1.8
 
     - name: Setup environment variables
       shell: bash
