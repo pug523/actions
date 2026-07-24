@@ -68,8 +68,35 @@ runs:
       shell: bash
       run: |
         if [[ "${{ inputs.os }}" == "Linux" ]]; then
-          echo "LD_LIBRARY_PATH=${{ env.LLVM_PATH }}/lib:${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
           echo "${{ env.LLVM_PATH }}/bin" >> $GITHUB_PATH
+          
+          TARGET_TRIPLE=$("${{ env.LLVM_PATH }}/bin/clang" -print-target-triple || true)
+          
+          TRIPLE_LIB=""
+          
+          if [[ -n "$TARGET_TRIPLE" && -d "${{ env.LLVM_PATH }}/lib/${TARGET_TRIPLE}" ]]; then
+            TRIPLE_LIB="${{ env.LLVM_PATH }}/lib/${TARGET_TRIPLE}"
+          else
+            FOUND_DIR=$(find "${{ env.LLVM_PATH }}/lib" -maxdepth 1 -mindepth 1 -type d -name "*-linux-*" | head -n 1)
+            if [[ -n "$FOUND_DIR" ]]; then
+              TRIPLE_LIB="$FOUND_DIR"
+            fi
+          fi
+
+          if [[ -n "$TRIPLE_LIB" ]]; then
+            echo "Found triple lib directory: $TRIPLE_LIB"
+            LIB_DIR="${TRIPLE_LIB}:${{ env.LLVM_PATH }}/lib"
+            RPATH_FLAGS="-Wl,-rpath,${TRIPLE_LIB} -Wl,-rpath,${{ env.LLVM_PATH }}/lib"
+            LDFLAG_PATHS="-L${TRIPLE_LIB} -L${{ env.LLVM_PATH }}/lib"
+          else
+            LIB_DIR="${{ env.LLVM_PATH }}/lib"
+            RPATH_FLAGS="-Wl,-rpath,${{ env.LLVM_PATH }}/lib"
+            LDFLAG_PATHS="-L${{ env.LLVM_PATH }}/lib"
+          fi
+
+          echo "LD_LIBRARY_PATH=${ env.LLVM_PATH }/lib:${LIB_DIR}:${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
+          echo "LDFLAGS=${LDFLAG_PATHS} ${RPATH_FLAGS}" >> $GITHUB_ENV
+
         elif [[ "${{ inputs.os }}" == "macOS" ]]; then
           xcode-select --install || true
           SDK=$(xcrun --show-sdk-path)
