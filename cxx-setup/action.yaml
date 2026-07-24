@@ -94,7 +94,7 @@ runs:
             LDFLAG_PATHS="-L${{ env.LLVM_PATH }}/lib"
           fi
 
-          echo "LD_LIBRARY_PATH=${ env.LLVM_PATH }/lib:${LIB_DIR}:${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=${{ env.LLVM_PATH }}/lib:${LIB_DIR}:${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
           echo "LDFLAGS=${LDFLAG_PATHS} ${RPATH_FLAGS}" >> $GITHUB_ENV
 
         elif [[ "${{ inputs.os }}" == "macOS" ]]; then
