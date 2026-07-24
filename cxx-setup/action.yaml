@@ -37,10 +37,6 @@ runs:
         version: 0.10.7
         enable-cache: true
 
-    - name: Sync python dependencies with uv
-      shell: bash
-      run: uv sync
-
     - name: Setup xmake
       uses: xmake-io/github-action-setup-xmake@3a1a5dddfc7fa625d9a698738334bf55655a861a
       with:
