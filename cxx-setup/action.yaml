@@ -43,12 +43,12 @@ runs:
         # https://github.com/xmake-io/xmake/tags
         xmake-version: 3.0.9
         actions-cache-folder: .xmake-cache
-        actions-cache-key: ${{ inputs.os }}-${{ inputs.plat }}-${{ inputs.arch }}-${{ inputs.build_type }}-xmake
+        actions-cache-key: ${{ inputs.os }}-${{ inputs.plat }}-${{ inputs.arch }}-xmake
         package-cache: true
-        package-cache-key: ${{ inputs.os }}-${{ inputs.plat }}-${{ inputs.arch }}-${{ inputs.build_type }}-packages
+        package-cache-key: ${{ inputs.os }}-${{ inputs.plat }}-${{ inputs.arch }}-packages
         build-cache: true
         build-cache-path: build/.build_cache
-        build-cache-key: ${{ inputs.os }}-${{ inputs.plat }}-${{ inputs.arch }}-${{ inputs.build_type }}-build
+        build-cache-key: ${{ inputs.os }}-${{ inputs.plat }}-${{ inputs.arch }}-${{ inputs.build_type }}-${{ inputs.llvm_version }}-build
         project-path: .
 
     - name: Install LLVM tools
@@ -61,7 +61,7 @@ runs:
       shell: bash
       run: |
         if [[ "${{ inputs.os }}" == "Linux" ]]; then
-          echo "LD_LIBRARY_PATH=${{ env.LLVM_PATH }}/lib:${LD_LIBRARY_PATH}" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=${{ env.LLVM_PATH }}/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> $GITHUB_ENV
           echo "LDFLAGS=-L${{ env.LLVM_PATH }}/lib -Wl,-rpath,${{ env.LLVM_PATH }}/lib" >> $GITHUB_ENV
         elif [[ "${{ inputs.os }}" == "macOS" ]]; then
           xcode-select --install || true
@@ -69,7 +69,7 @@ runs:
           echo "SDKROOT=$SDK" >> $GITHUB_ENV
           echo "LDFLAGS=-L${{ env.LLVM_PATH }}/lib -fuse-ld=lld -Wl,-rpath,${{ env.LLVM_PATH }}/lib" >> $GITHUB_ENV
           echo "CXXFLAGS=-isysroot $SDK" >> $GITHUB_ENV
-          echo "DYLD_LIBRARY_PATH=${{ env.LLVM_PATH }}/lib:${DYLD_LIBRARY_PATH}" >> $GITHUB_ENV
+          echo "${{ env.LLVM_PATH }}/bin" >> $GITHUB_PATH
         elif [[ "${{ inputs.os }}" == "Windows" ]]; then
           # We don't use libc++ in Windows currently so currently commented out.
           # echo "${{ env.LLVM_PATH }}/bin" >> $GITHUB_PATH
