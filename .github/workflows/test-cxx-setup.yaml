@@ -66,8 +66,12 @@ jobs:
           
           EXPECTED_VERSION="${{ matrix.llvm-version }}"
 
-          TOOLS=("clang" "clang++" "lld")
-          if [[ "${{ matrix.os-name }}" == "Windows" ]]; then
+          TOOLS=("clang" "clang++")
+          if [[ "${{ matrix.os-name }}" == "Linux" ]]; then
+            TOOLS+=("ld.lld")
+          elif [[ "${{ matrix.os-name }}" == "macOS" ]]; then
+            TOOLS+=("ld64.lld")
+          elif [[ "${{ matrix.os-name }}" == "Windows" ]]; then
             TOOLS+=("lld-link" "clang-cl")
           fi
 
