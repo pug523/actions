@@ -37,6 +37,17 @@ runs:
         version: 0.10.7
         enable-cache: true
 
+    - name: Create xmake file if not exists
+      shell: bash
+      run: |
+        if [[ ! -f "xmake.lua" ]]; then
+          cat << 'EOF' > xmake.lua
+          target("dummy_from_cxx_setup_action")
+              set_kind("binary")
+              add_files("src/*.cc")
+          EOF
+        fi
+
     - name: Setup xmake
       uses: xmake-io/github-action-setup-xmake@3a1a5dddfc7fa625d9a698738334bf55655a861a
       with:
