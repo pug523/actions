@@ -71,6 +71,15 @@ jobs:
             TOOLS+=("lld-link" "clang-cl")
           fi
 
+          NORMALIZED_LLVM_PATH=""
+          if [[ -n "$LLVM_PATH" ]]; then
+            if command -v cygpath &> /dev/null; then
+              NORMALIZED_LLVM_PATH=$(cygpath -u "$LLVM_PATH" | tr '[:upper:]' '[:lower:]')
+            else
+              NORMALIZED_LLVM_PATH=$(echo "$LLVM_PATH" | tr '[:upper:]' '[:lower:]')
+            fi
+          fi
+
           for tool in "${TOOLS[@]}"; do
             echo "----------------------------------------"
             echo "Testing tool: $tool"
@@ -78,8 +87,9 @@ jobs:
             TOOL_PATH=$(which $tool || true)
             echo "Path: $TOOL_PATH"
 
-            if [[ -n "$LLVM_PATH" ]]; then
-              if [[ "$TOOL_PATH" != *"$LLVM_PATH"* ]]; then
+            if [[ -n "$NORMALIZED_LLVM_PATH" ]]; then
+              NORMALIZED_TOOL_PATH=$(echo "$TOOL_PATH" | tr '[:upper:]' '[:lower:]')
+              if [[ "$NORMALIZED_TOOL_PATH" != *"$NORMALIZED_LLVM_PATH"* ]]; then
                 echo "::warning::$tool path ($TOOL_PATH) does not seem to point inside LLVM_PATH ($LLVM_PATH)"
               fi
             fi
