@@ -41,11 +41,7 @@ runs:
       shell: bash
       run: |
         if [[ ! -f "xmake.lua" ]]; then
-          cat << 'EOF' > xmake.lua
-          target("dummy_from_cxx_setup_action")
-              set_kind("binary")
-              add_files("src/*.cc")
-          EOF
+          printf 'target("dummy_from_cxx_setup_action")\n  set_kind("binary")\n' > xmake.lua
         fi
 
     - name: Setup xmake
