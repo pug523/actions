@@ -68,8 +68,8 @@ runs:
       shell: bash
       run: |
         if [[ "${{ inputs.os }}" == "Linux" ]]; then
-          echo "LD_LIBRARY_PATH=${{ env.LLVM_PATH }}/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> $GITHUB_ENV
-          echo "LDFLAGS=-L${{ env.LLVM_PATH }}/lib -Wl,-rpath,${{ env.LLVM_PATH }}/lib" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=${{ env.LLVM_PATH }}/lib:${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
+          echo "${{ env.LLVM_PATH }}/bin" >> $GITHUB_PATH
         elif [[ "${{ inputs.os }}" == "macOS" ]]; then
           xcode-select --install || true
           SDK=$(xcrun --show-sdk-path)

@@ -121,6 +121,7 @@ jobs:
 
           if [[ "${{ matrix.os-name }}" == "Linux" ]]; then
             echo "Building on Linux with -stdlib=libc++..."
+            export LDFLAGS="-lc++ -lc++abi $LDFLAGS"
             clang++ -std=c++20 -stdlib=libc++ test_main.cpp -o test_app $LDFLAGS
             ./test_app
 
