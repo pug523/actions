@@ -38,6 +38,11 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Prepare dummy files
+        shell: bash
+        run: |
+          echo "" > xmake.lua
+
       - name: Run cxx-setup action
         uses: ./cxx-setup
         with:
