@@ -74,8 +74,8 @@ runs:
           xcode-select --install || true
           SDK=$(xcrun --show-sdk-path)
           echo "SDKROOT=$SDK" >> $GITHUB_ENV
-          echo "LDFLAGS=-L${{ env.LLVM_PATH }}/lib -fuse-ld=lld -Wl,-rpath,${{ env.LLVM_PATH }}/lib" >> $GITHUB_ENV
           echo "CXXFLAGS=-isysroot $SDK" >> $GITHUB_ENV
+          echo "LDFLAGS=-isysroot $SDK -L$SDK/usr/lib -L${{ env.LLVM_PATH }}/lib -fuse-ld=lld -Wl,-rpath,${{ env.LLVM_PATH }}/lib -lc++" >> $GITHUB_ENV
           echo "${{ env.LLVM_PATH }}/bin" >> $GITHUB_PATH
         # elif [[ "${{ inputs.os }}" == "Windows" ]]; then
         #   # We don't use libc++ in Windows currently so currently commented out.
