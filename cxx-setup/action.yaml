@@ -59,7 +59,7 @@ runs:
         project-path: .
 
     - name: Install LLVM tools
-      uses: pug523/install-llvm-action@233ad1a2ce9110f71dcf05c2cce4780bbeafd2f1
+      uses: pug523/install-llvm-action@c5118e39c2216f0c62ea6cbfab548859fdd1fe4d
       with:
         # https://github.com/pug523/install-llvm-action/blob/master/assets.json
         version: ${{ inputs.llvm_version }}
