@@ -1,0 +1,142 @@
+name: Test cxx-gn-setup Composite Action
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-cxx-setup:
+    name: Test on ${{ matrix.os-name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner-os: ubuntu-latest
+            os-name: Linux
+            plat: linux
+            arch: x86_64
+            llvm-version: "22.1.8"
+          - runner-os: macos-latest
+            os-name: macOS
+            plat: macos
+            arch: x86_64
+            llvm-version: "22.1.8"
+          - runner-os: windows-latest
+            os-name: Windows
+            plat: windows
+            arch: x64
+            llvm-version: "22.1.8"
+
+    runs-on: ${{ matrix.runner-os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          submodules: recursive
+
+      - name: Run cxx-gn-setup action
+        uses: ./cxx-gn-setup
+        with:
+          os: ${{ matrix.os-name }}
+          plat: ${{ matrix.plat }}
+          arch: ${{ matrix.arch }}
+          build_type: release
+          llvm_version: ${{ matrix.llvm-version }}
+
+      - name: Verify uv installation
+        shell: bash
+        run: |
+          which uv || type uv
+          uv --version
+
+      - name: Verify gn installation
+        shell: bash
+        run: |
+          which gn || type gn
+          gn --version
+
+      - name: Verify LLVM binaries
+        shell: bash
+        run: |
+          echo "LLVM_PATH is: $LLVM_PATH"
+          
+          EXPECTED_VERSION="${{ matrix.llvm-version }}"
+
+          TOOLS=("clang" "clang++")
+          if [[ "${{ matrix.os-name }}" == "Linux" ]]; then
+            TOOLS+=("ld.lld")
+          elif [[ "${{ matrix.os-name }}" == "macOS" ]]; then
+            TOOLS+=("ld64.lld")
+          elif [[ "${{ matrix.os-name }}" == "Windows" ]]; then
+            TOOLS+=("lld-link" "clang-cl")
+          fi
+
+          NORMALIZED_LLVM_PATH=""
+          if [[ -n "$LLVM_PATH" ]]; then
+            if command -v cygpath &> /dev/null; then
+              NORMALIZED_LLVM_PATH=$(cygpath -u "$LLVM_PATH" | tr '[:upper:]' '[:lower:]')
+            else
+              NORMALIZED_LLVM_PATH=$(echo "$LLVM_PATH" | tr '[:upper:]' '[:lower:]')
+            fi
+          fi
+
+          for tool in "${TOOLS[@]}"; do
+            echo "----------------------------------------"
+            echo "Testing tool: $tool"
+            
+            TOOL_PATH=$(which $tool || true)
+            echo "Path: $TOOL_PATH"
+
+            if [[ -n "$NORMALIZED_LLVM_PATH" ]]; then
+              NORMALIZED_TOOL_PATH=$(echo "$TOOL_PATH" | tr '[:upper:]' '[:lower:]')
+              if [[ "$NORMALIZED_TOOL_PATH" != *"$NORMALIZED_LLVM_PATH"* ]]; then
+                echo "::warning::$tool path ($TOOL_PATH) does not seem to point inside LLVM_PATH ($LLVM_PATH)"
+              fi
+            fi
+
+            $tool --version
+          done
+
+      - name: Test C++ Compilation & libc++ Linkage
+        shell: bash
+        run: |
+          cat << 'EOF' > test_main.cpp
+          #include <iostream>
+          #include <vector>
+          #include <string>
+
+          int main() {
+              std::vector<std::string> msg {"Hello", "from", "C++", "Toolchain!"};
+              for (const auto& word : msg) {
+                  std::cout << word << " ";
+              }
+              std::cout << std::endl;
+              return 0;
+          }
+          EOF
+
+          if [[ "${{ matrix.os-name }}" == "Linux" ]]; then
+            echo "Building on Linux with -stdlib=libc++..."
+            export LDFLAGS="-lc++ -lc++abi $LDFLAGS"
+            clang++ -std=c++20 -stdlib=libc++ test_main.cpp -o test_app $LDFLAGS
+            ./test_app
+
+            echo "Checking dynamic dependencies:"
+            ldd test_app | grep -i "libc++" || (echo "libc++ is not linked!" && exit 1)
+          elif [[ "${{ matrix.os-name }}" == "macOS" ]]; then
+            echo "Building on macOS..."
+            clang++ -std=c++20 test_main.cpp -o test_app $CXXFLAGS $LDFLAGS
+            ./test_app
+
+            echo "Checking dynamic dependencies:"
+            otool -L test_app
+          elif [[ "${{ matrix.os-name }}" == "Windows" ]]; then
+            echo "Building on Windows..."
+            clang++ -std=c++20 test_main.cpp -o test_app.exe
+            ./test_app.exe
+          fi
+
