@@ -9,6 +9,10 @@ runs:
       with:
         python-version: '3.14'
 
+    - name: Initialize MSVC Developer Command Prompt
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+
     - name: Check out GN source
       shell: bash
       run: |
