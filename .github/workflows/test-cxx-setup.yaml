@@ -3,8 +3,12 @@ name: Test cxx-setup Composite Action
 on:
   push:
     branches: [ main ]
+    paths: &ci_paths
+      - cxx-setup/**
+      - .github/workflows/test-cxx-setup.yaml
   pull_request:
     branches: [ main ]
+    paths: *ci_paths
   workflow_dispatch:
 
 jobs:
