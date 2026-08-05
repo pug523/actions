@@ -30,7 +30,7 @@ runs:
       if: steps.cache-gn.outputs.cache-hit != 'true'
       run: |
         cd gn
-        python build/gn.py
+        python build/gen.py
         ninja -C out
 
     - name: Setup environment variables
