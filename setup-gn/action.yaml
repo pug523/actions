@@ -29,18 +29,21 @@ runs:
         restore-keys: |
           ${{ runner.os }}-gn-
 
-    - name: Build GN
-      if: steps.cache-gn.outputs.cache-hit != 'true'
+    - name: Build GN (Linux / macOS)
+      if: steps.cache-gn.outputs.cache-hit != 'true' && runner.os != 'Windows'
       shell: bash
       run: |
         cd gn
-        python build/gen.py --allow-warning
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          ninja -C out gn.exe
-        else
-          ninja -C out gn
-        fi
+        python3 build/gen.py --allow-warning
+        ninja -C out gn
 
+    - name: Build GN (Windows)
+      if: steps.cache-gn.outputs.cache-hit != 'true' && runner.os == 'Windows'
+      shell: cmd
+      run: |
+        cd gn
+        python build/gen.py --allow-warning
+        ninja -C out gn.exe
 
     - name: Setup environment variables
       shell: bash
