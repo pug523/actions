@@ -1,14 +1,8 @@
-name: Setup C++ build environment
-description: Installs uv, xmake, and LLVM
+name: Setup C++ base environment
+description: Installs uv and LLVM, and sets up environment variables
 
 inputs:
   os:
-    required: true
-  plat:
-    required: true
-  arch:
-    required: true
-  build_type:
     required: true
   llvm_version:
     required: true
@@ -36,27 +30,6 @@ runs:
         # https://github.com/astral-sh/uv/tags
         version: 0.11.32
         enable-cache: true
-
-    - name: Create xmake file if not exists
-      shell: bash
-      run: |
-        if [[ ! -f "xmake.lua" ]]; then
-          printf 'target("dummy_from_cxx_setup_action")\n  set_kind("binary")\n' > xmake.lua
-        fi
-
-    - name: Setup xmake
-      uses: xmake-io/github-action-setup-xmake@3a1a5dddfc7fa625d9a698738334bf55655a861a
-      with:
-        # https://github.com/xmake-io/xmake/tags
-        xmake-version: 3.1.0
-        actions-cache-folder: .xmake-cache
-        actions-cache-key: ${{ inputs.os }}-${{ inputs.plat }}-${{ inputs.arch }}-xmake
-        package-cache: true
-        package-cache-key: ${{ inputs.os }}-${{ inputs.plat }}-${{ inputs.arch }}-packages
-        build-cache: true
-        build-cache-path: build/.build_cache
-        build-cache-key: ${{ inputs.os }}-${{ inputs.plat }}-${{ inputs.arch }}-${{ inputs.build_type }}-${{ inputs.llvm_version }}-build
-        project-path: .
 
     - name: Install LLVM tools
       uses: pug523/install-llvm-action@c5118e39c2216f0c62ea6cbfab548859fdd1fe4d

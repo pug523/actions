@@ -4,90 +4,17 @@ description: Installs uv, ninja, gn, and LLVM
 inputs:
   os:
     required: true
-  plat:
-    required: true
-  arch:
-    required: true
-  build_type:
-    required: true
   llvm_version:
     required: true
 
 runs:
   using: "composite"
   steps:
-    - name: Free Disk Space
-      if: inputs.os == 'Linux'
-      shell: bash
-      run: |
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        sudo rm -rf "/usr/local/share/boost"
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-
-    - name: Fetch tags
-      shell: bash
-      run: git submodule foreach --recursive 'git fetch --tags --depth=1'
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+    - name: Setup base environment
+      uses: ./cxx-base-setup
       with:
-        # https://github.com/astral-sh/uv/tags
-        version: 0.11.32
-        enable-cache: true
-
-    - name: Install LLVM tools
-      uses: pug523/install-llvm-action@c5118e39c2216f0c62ea6cbfab548859fdd1fe4d
-      with:
-        # https://github.com/pug523/install-llvm-action/blob/master/assets.json
-        version: ${{ inputs.llvm_version }}
-
-    - name: Setup environment variables
-      shell: bash
-      run: |
-        if [[ "${{ inputs.os }}" == "Linux" ]]; then
-          echo "${{ env.LLVM_PATH }}/bin" >> $GITHUB_PATH
-          
-          TARGET_TRIPLE=$("${{ env.LLVM_PATH }}/bin/clang" -print-target-triple || true)
-          
-          TRIPLE_LIB=""
-          
-          if [[ -n "$TARGET_TRIPLE" && -d "${{ env.LLVM_PATH }}/lib/${TARGET_TRIPLE}" ]]; then
-            TRIPLE_LIB="${{ env.LLVM_PATH }}/lib/${TARGET_TRIPLE}"
-          else
-            FOUND_DIR=$(find "${{ env.LLVM_PATH }}/lib" -maxdepth 1 -mindepth 1 -type d -name "*-linux-*" | head -n 1)
-            if [[ -n "$FOUND_DIR" ]]; then
-              TRIPLE_LIB="$FOUND_DIR"
-            fi
-          fi
-
-          if [[ -n "$TRIPLE_LIB" ]]; then
-            echo "Found triple lib directory: $TRIPLE_LIB"
-            LIB_DIR="${TRIPLE_LIB}:${{ env.LLVM_PATH }}/lib"
-            RPATH_FLAGS="-Wl,-rpath,${TRIPLE_LIB} -Wl,-rpath,${{ env.LLVM_PATH }}/lib"
-            LDFLAG_PATHS="-L${TRIPLE_LIB} -L${{ env.LLVM_PATH }}/lib"
-          else
-            LIB_DIR="${{ env.LLVM_PATH }}/lib"
-            RPATH_FLAGS="-Wl,-rpath,${{ env.LLVM_PATH }}/lib"
-            LDFLAG_PATHS="-L${{ env.LLVM_PATH }}/lib"
-          fi
-
-          echo "LD_LIBRARY_PATH=${{ env.LLVM_PATH }}/lib:${LIB_DIR}:${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
-          echo "LDFLAGS=${LDFLAG_PATHS} ${RPATH_FLAGS}" >> $GITHUB_ENV
-
-        elif [[ "${{ inputs.os }}" == "macOS" ]]; then
-          xcode-select --install || true
-          SDK=$(xcrun --show-sdk-path)
-          echo "SDKROOT=$SDK" >> $GITHUB_ENV
-          echo "CXXFLAGS=-isysroot $SDK" >> $GITHUB_ENV
-          echo "LDFLAGS=-isysroot $SDK -L$SDK/usr/lib -L${{ env.LLVM_PATH }}/lib -fuse-ld=lld -Wl,-rpath,${{ env.LLVM_PATH }}/lib -lc++" >> $GITHUB_ENV
-          echo "${{ env.LLVM_PATH }}/bin" >> $GITHUB_PATH
-        # elif [[ "${{ inputs.os }}" == "Windows" ]]; then
-        #   # We don't use libc++ in Windows currently so currently commented out.
-        #   echo "${{ env.LLVM_PATH }}/bin" >> $GITHUB_PATH
-        #   echo "${{ env.LLVM_PATH }}/lib" >> $GITHUB_PATH
-        fi
+        os: ${{ inputs.os }}
+        llvm_version: ${{ inputs.llvm_version }}
 
     - name: Setup gn
       uses: ./setup-gn

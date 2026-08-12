@@ -1,37 +1,31 @@
-name: Test cxx-setup Composite Action
+name: Test cxx-base-setup Composite Action
 
 on:
   push:
     branches: [ main ]
     paths: &ci_paths
-      - cxx-setup/**
-      - .github/workflows/test-cxx-setup.yaml
+      - cxx-base-setup/**
+      - .github/workflows/test-cxx-base-setup.yaml
   pull_request:
     branches: [ main ]
     paths: *ci_paths
   workflow_dispatch:
 
 jobs:
-  test-cxx-setup:
-    name: Test on ${{ matrix.os-name }}
+  test-cxx-base-setup:
+    name: Test Base on ${{ matrix.os-name }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - runner-os: ubuntu-latest
             os-name: Linux
-            plat: linux
-            arch: x86_64
             llvm-version: "22.1.8"
           - runner-os: macos-latest
             os-name: macOS
-            plat: macos
-            arch: x86_64
             llvm-version: "22.1.8"
           - runner-os: windows-latest
             os-name: Windows
-            plat: windows
-            arch: x64
             llvm-version: "22.1.8"
 
     runs-on: ${{ matrix.runner-os }}
@@ -42,13 +36,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Run cxx-setup action
-        uses: ./cxx-setup
+      - name: Run cxx-base-setup action
+        uses: ./cxx-base-setup
         with:
           os: ${{ matrix.os-name }}
-          plat: ${{ matrix.plat }}
-          arch: ${{ matrix.arch }}
-          build_type: release
           llvm_version: ${{ matrix.llvm-version }}
 
       - name: Verify uv installation
@@ -57,19 +48,10 @@ jobs:
           which uv || type uv
           uv --version
 
-      - name: Verify xmake installation
-        shell: bash
-        run: |
-          which xmake || type xmake
-          xmake --version
-
       - name: Verify LLVM binaries
         shell: bash
         run: |
           echo "LLVM_PATH is: $LLVM_PATH"
-          
-          EXPECTED_VERSION="${{ matrix.llvm-version }}"
-
           TOOLS=("clang" "clang++")
           if [[ "${{ matrix.os-name }}" == "Linux" ]]; then
             TOOLS+=("ld.lld")
@@ -79,29 +61,8 @@ jobs:
             TOOLS+=("lld-link" "clang-cl")
           fi
 
-          NORMALIZED_LLVM_PATH=""
-          if [[ -n "$LLVM_PATH" ]]; then
-            if command -v cygpath &> /dev/null; then
-              NORMALIZED_LLVM_PATH=$(cygpath -u "$LLVM_PATH" | tr '[:upper:]' '[:lower:]')
-            else
-              NORMALIZED_LLVM_PATH=$(echo "$LLVM_PATH" | tr '[:upper:]' '[:lower:]')
-            fi
-          fi
-
           for tool in "${TOOLS[@]}"; do
-            echo "----------------------------------------"
             echo "Testing tool: $tool"
-            
-            TOOL_PATH=$(which $tool || true)
-            echo "Path: $TOOL_PATH"
-
-            if [[ -n "$NORMALIZED_LLVM_PATH" ]]; then
-              NORMALIZED_TOOL_PATH=$(echo "$TOOL_PATH" | tr '[:upper:]' '[:lower:]')
-              if [[ "$NORMALIZED_TOOL_PATH" != *"$NORMALIZED_LLVM_PATH"* ]]; then
-                echo "::warning::$tool path ($TOOL_PATH) does not seem to point inside LLVM_PATH ($LLVM_PATH)"
-              fi
-            fi
-
             $tool --version
           done
 
@@ -124,22 +85,14 @@ jobs:
           EOF
 
           if [[ "${{ matrix.os-name }}" == "Linux" ]]; then
-            echo "Building on Linux with -stdlib=libc++..."
-            export LDFLAGS="-lc++ -lc++abi $LDFLAGS"
-            clang++ -std=c++20 -stdlib=libc++ test_main.cpp -o test_app $LDFLAGS
+            clang++ -std=c++20 -stdlib=libc++ test_main.cpp -o test_app -lc++ -lc++abi $LDFLAGS
             ./test_app
-
-            echo "Checking dynamic dependencies:"
             ldd test_app | grep -i "libc++" || (echo "libc++ is not linked!" && exit 1)
           elif [[ "${{ matrix.os-name }}" == "macOS" ]]; then
-            echo "Building on macOS..."
             clang++ -std=c++20 test_main.cpp -o test_app $CXXFLAGS $LDFLAGS
             ./test_app
-
-            echo "Checking dynamic dependencies:"
             otool -L test_app
           elif [[ "${{ matrix.os-name }}" == "Windows" ]]; then
-            echo "Building on Windows..."
             clang++ -std=c++20 test_main.cpp -o test_app.exe
             ./test_app.exe
           fi

@@ -1,21 +1,20 @@
-name: Test cxx-gn-setup Composite Action
+name: Test cxx-xmake-setup Composite Action
 
 on:
   push:
     branches: [ main ]
     paths: &ci_paths
-      - cxx-gn-setup/**
+      - cxx-xmake-setup/**
       - cxx-base-setup/**
-      - setup-gn/**
-      - .github/workflows/test-cxx-gn-setup.yaml
+      - .github/workflows/test-cxx-xmake-setup.yaml
   pull_request:
     branches: [ main ]
     paths: *ci_paths
   workflow_dispatch:
 
 jobs:
-  test-cxx-gn-setup:
-    name: Test GN on ${{ matrix.os-name }}
+  test-cxx-xmake-setup:
+    name: Test xmake on ${{ matrix.os-name }}
     strategy:
       fail-fast: false
       matrix:
@@ -44,14 +43,17 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Run cxx-gn-setup action
-        uses: ./cxx-gn-setup
+      - name: Run cxx-xmake-setup action
+        uses: ./cxx-xmake-setup
         with:
           os: ${{ matrix.os-name }}
+          plat: ${{ matrix.plat }}
+          arch: ${{ matrix.arch }}
+          build_type: release
           llvm_version: ${{ matrix.llvm-version }}
 
-      - name: Verify gn installation
+      - name: Verify xmake installation
         shell: bash
         run: |
-          which gn || type gn
-          gn --version
+          which xmake || type xmake
+          xmake --version
