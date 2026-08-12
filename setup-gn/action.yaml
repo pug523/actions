@@ -5,6 +5,7 @@ runs:
   using: "composite"
   steps:
     - name: Setup python
+      if: runner.os != 'Windows'
       uses: actions/setup-python@8549b9f8f590ad24eab7482f36f6e1e24d34597b
       with:
         python-version: '3.14'
@@ -14,6 +15,7 @@ runs:
       uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
 
     - name: Check out GN source
+      if: runner.os != 'Windows'
       shell: bash
       run: |
         if [ ! -d "gn" ]; then
@@ -21,6 +23,7 @@ runs:
         fi
 
     - name: Cache GN build output
+      if: runner.os != 'Windows'
       id: cache-gn
       uses: actions/cache@3edfce9056124e459a23f683a21433670d47daca
       with:
@@ -30,14 +33,29 @@ runs:
           ${{ runner.os }}-gn-
 
     - name: Build GN
+      if: runner.os != 'Windows' && steps.cache-gn.outputs.cache-hit != 'true'
       shell: bash
-      if: steps.cache-gn.outputs.cache-hit != 'true'
       run: |
         cd gn
         python build/gen.py
         ninja -C out
 
-    - name: Setup environment variables
+    - name: Setup environment variables (Linux/macOS)
+      if: runner.os != 'Windows'
       shell: bash
       run: |
-        echo "$PWD/gn/out" >> $GITHUB_PATH
+        echo "$PWD/out" >> $GITHUB_PATH
+
+    - name: Download and Extract GN (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        DEST_DIR="${RUNNER_TEMP}/gn_bin"
+        mkdir -p "$DEST_DIR"
+
+        ZIP_PATH="${RUNNER_TEMP}/gn-windows-amd64.zip"
+        curl -L -s -o "$ZIP_PATH" "https://chrome-infra-packages.appspot.com/dl/gn/gn/windows-amd64/+/latest"
+
+        unzip -q -o "$ZIP_PATH" -d "$DEST_DIR"
+
+        echo "$DEST_DIR" >> $GITHUB_PATH
