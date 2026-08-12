@@ -12,9 +12,6 @@ runs:
     - name: Initialize MSVC Developer Command Prompt
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
-      with:
-        vsversion: '2022'
-        arch: 'x64'
 
     - name: Check out GN source
       shell: bash
