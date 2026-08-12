@@ -53,7 +53,7 @@ runs:
         DEST_DIR="${RUNNER_TEMP}/gn_bin"
         mkdir -p "$DEST_DIR"
 
-        ZIP_PATH="${RUNNER_TEMP}/gn-windows-amd64.zip"
+        ZIP_PATH="${RUNNER_TEMP}/gn-windows.zip"
         curl -L -s -o "$ZIP_PATH" "https://chrome-infra-packages.appspot.com/dl/gn/gn/windows-amd64/+/latest"
 
         unzip -q -o "$ZIP_PATH" -d "$DEST_DIR"
