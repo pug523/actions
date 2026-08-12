@@ -17,7 +17,7 @@ runs:
   using: "composite"
   steps:
     - name: Setup base environment
-      uses: ./cxx-base-setup
+      uses: pug523/actions/cxx-base-setup@main
       with:
         os: ${{ inputs.os }}
         llvm_version: ${{ inputs.llvm_version }}
