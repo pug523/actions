@@ -37,9 +37,6 @@ runs:
         version: 0.11.32
         enable-cache: true
 
-    - name: Setup gn
-      uses: ./setup-gn
-
     - name: Install LLVM tools
       uses: pug523/install-llvm-action@c5118e39c2216f0c62ea6cbfab548859fdd1fe4d
       with:
@@ -91,3 +88,6 @@ runs:
         #   echo "${{ env.LLVM_PATH }}/bin" >> $GITHUB_PATH
         #   echo "${{ env.LLVM_PATH }}/lib" >> $GITHUB_PATH
         fi
+
+    - name: Setup gn
+      uses: ./setup-gn
