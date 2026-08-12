@@ -44,4 +44,4 @@ runs:
     - name: Setup environment variables
       shell: bash
       run: |
-        echo "$PWD/out" >> $GITHUB_PATH
+        echo "$PWD/gn/out" >> $GITHUB_PATH
