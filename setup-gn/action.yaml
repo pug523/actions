@@ -5,7 +5,7 @@ runs:
   using: "composite"
   steps:
     - name: Setup python
-      uses: actions/setup-python@8549b9f8f590ad24eab7482f36f6e1e24d34597b
+      uses: actions/setup-python@66fcabf4d07f2b61e164d83ccd6829fcda36ae0f
       with:
         python-version: '3.14'
 
