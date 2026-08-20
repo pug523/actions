@@ -3,18 +3,24 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/cxx-setup"
     schedule:
-      interval: "weekly"
+      interval: "cron"
+      cronjob: "8 7 * * 1"
+      timezone: "UTC"
     open-pull-requests-limit: 10
 
   - package-ecosystem: "github-actions"
     directory: "/cxx-gn-setup"
     schedule:
-      interval: "weekly"
+      interval: "cron"
+      cronjob: "8 7 * * 1"
+      timezone: "UTC"
     open-pull-requests-limit: 10
 
   - package-ecosystem: "github-actions"
     directory: "/setup-gn"
     schedule:
-      interval: "weekly"
+      interval: "cron"
+      cronjob: "8 7 * * 1"
+      timezone: "UTC"
     open-pull-requests-limit: 10
 
