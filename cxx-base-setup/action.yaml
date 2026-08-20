@@ -71,9 +71,9 @@ runs:
           echo "LDFLAGS=${LDFLAG_PATHS} ${RPATH_FLAGS}" >> $GITHUB_ENV
 
         elif [[ "${{ inputs.os }}" == "macOS" ]]; then
-          xcode-select --install || true
-          SDK=$(xcrun --show-sdk-path)
-          echo "SDKROOT=$SDK" >> $GITHUB_ENV
+          # xcode-select --install || true
+          # SDK=$(xcrun --show-sdk-path)
+          # echo "SDKROOT=$SDK" >> $GITHUB_ENV
           # echo "CXXFLAGS=-isysroot $SDK" >> $GITHUB_ENV
           # echo "LDFLAGS=-isysroot $SDK -L$SDK/usr/lib -L${{ env.LLVM_PATH }}/lib -fuse-ld=lld -Wl,-rpath,${{ env.LLVM_PATH }}/lib -lc++" >> $GITHUB_ENV
           echo "${{ env.LLVM_PATH }}/bin" >> $GITHUB_PATH
