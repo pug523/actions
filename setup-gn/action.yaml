@@ -4,10 +4,12 @@ description: "Builds, installs, and caches GN"
 runs:
   using: "composite"
   steps:
-    - name: Setup python
-      uses: actions/setup-python@66fcabf4d07f2b61e164d83ccd6829fcda36ae0f
+    - name: Install uv
+      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
       with:
-        python-version: '3.14'
+        # https://github.com/astral-sh/uv/tags
+        version: 0.11.32
+        enable-cache: true
 
     - name: Initialize MSVC Developer Command Prompt
       if: runner.os == 'Windows'
@@ -34,7 +36,7 @@ runs:
       shell: bash
       run: |
         cd gn
-        python3 build/gen.py --allow-warning
+        uv run build/gen.py --allow-warning
         ninja -C out gn
 
     - name: Build GN (Windows)
@@ -42,7 +44,7 @@ runs:
       shell: cmd
       run: |
         cd gn
-        python build/gen.py --allow-warning
+        uv run build/gen.py --allow-warning
         ninja -C out gn.exe
 
     - name: Setup environment variables
