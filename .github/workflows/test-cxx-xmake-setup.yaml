@@ -23,17 +23,17 @@ jobs:
             os-name: Linux
             plat: linux
             arch: x86_64
-            llvm-version: "22.1.8"
+            llvm-version: "23.1.1"
           - runner-os: macos-latest
             os-name: macOS
             plat: macos
             arch: x86_64
-            llvm-version: "22.1.8"
+            llvm-version: "23.1.1"
           - runner-os: windows-latest
             os-name: Windows
             plat: windows
             arch: x64
-            llvm-version: "22.1.8"
+            llvm-version: "23.1.1"
 
     runs-on: ${{ matrix.runner-os }}
 

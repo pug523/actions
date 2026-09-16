@@ -20,13 +20,13 @@ jobs:
         include:
           - runner-os: ubuntu-latest
             os-name: Linux
-            llvm-version: "22.1.8"
+            llvm-version: "23.1.1"
           - runner-os: macos-latest
             os-name: macOS
-            llvm-version: "22.1.8"
+            llvm-version: "23.1.1"
           - runner-os: windows-latest
             os-name: Windows
-            llvm-version: "22.1.8"
+            llvm-version: "23.1.1"
 
     runs-on: ${{ matrix.runner-os }}
 
