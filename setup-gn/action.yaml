@@ -21,7 +21,7 @@ runs:
         SRC_DIR="$RUNNER_TEMP/gn-src"
 
         if [ ! -d "$SRC_DIR/.git" ]; then
-          git clone --depth 1 https://gn.googlesource.com/gn "$SRC_DIR"
+          git clone https://gn.googlesource.com/gn "$SRC_DIR"
         fi
 
     - name: Get GN revision
