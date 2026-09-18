@@ -18,41 +18,54 @@ runs:
     - name: Check out GN source
       shell: bash
       run: |
-        SRC_DIR="${{ runner.temp }}/gn-src"
-        if [ ! -d "$SRC_DIR" ]; then
-          git clone https://gn.googlesource.com/gn "$SRC_DIR"
+        SRC_DIR="$RUNNER_TEMP/gn-src"
+
+        if [ ! -d "$SRC_DIR/.git" ]; then
+          git clone --depth 1 https://gn.googlesource.com/gn "$SRC_DIR"
         fi
+
+    - name: Get GN revision
+      id: gn-revision
+      shell: bash
+      run: |
+        cd "$RUNNER_TEMP/gn-src"
+        echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
     - name: Cache GN binary
       id: cache-gn
       uses: actions/cache@3edfce9056124e459a23f683a21433670d47daca
       with:
         path: ${{ runner.temp }}/gn-bin
-        key: ${{ runner.os }}-gn-bin-${{ hashFiles(format('{0}/gn-src/build/**', runner.temp), format('{0}/gn-src/tools/**', runner.temp)) }}
-        restore-keys: |
-          ${{ runner.os }}-gn-bin-
+        key: ${{ runner.os }}-gn-bin-${{ steps.gn-revision.outputs.sha }}
 
     - name: Build GN (Linux / macOS)
       if: steps.cache-gn.outputs.cache-hit != 'true' && runner.os != 'Windows'
       shell: bash
       run: |
-        mkdir -p "${{ runner.temp }}/gn-bin"
-        cd "${{ runner.temp }}/gn-src"
+        GN_SRC="$RUNNER_TEMP/gn-src"
+        GN_BIN="$RUNNER_TEMP/gn-bin"
+
+        mkdir -p "$GN_BIN"
+
+        cd "$GN_SRC"
         uv run build/gen.py --allow-warning
         ninja -C out gn
-        cp out/gn "${{ runner.temp }}/gn-bin/gn"
+
+        cp out/gn "$GN_BIN/gn"
 
     - name: Build GN (Windows)
       if: steps.cache-gn.outputs.cache-hit != 'true' && runner.os == 'Windows'
       shell: cmd
       run: |
-        if not exist "${{ runner.temp }}\gn-bin" mkdir "${{ runner.temp }}\gn-bin"
-        cd /d "${{ runner.temp }}\gn\src"
+        if not exist "%RUNNER_TEMP%\gn-bin" mkdir "%RUNNER_TEMP%\gn-bin"
+
+        cd /d "%RUNNER_TEMP%\gn-src"
         uv run build/gen.py --allow-warning
         ninja -C out gn.exe
-        copy out\gn.exe "${{ runner.temp }}\gn-bin\gn.exe"
+
+        copy /Y "out\gn.exe" "%RUNNER_TEMP%\gn-bin\gn.exe"
 
     - name: Setup environment variables
       shell: bash
       run: |
-        echo "${{ runner.temp }}/gn-bin" >> $GITHUB_PATH
+        echo "$RUNNER_TEMP/gn-bin" >> "$GITHUB_PATH"
