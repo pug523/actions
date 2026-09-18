@@ -6,6 +6,10 @@ inputs:
     required: true
   llvm_version:
     required: true
+  directory:
+    description: "Directory to install LLVM and Clang binaries to. Defaults to the action default (workspace ./llvm)."
+    required: false
+    default: ""
 
 runs:
   using: "composite"
@@ -32,6 +36,7 @@ runs:
       with:
         # https://github.com/pug523/install-llvm-action/blob/master/assets.json
         version: ${{ inputs.llvm_version }}
+        directory: ${{ inputs.directory }}
 
     - name: Setup environment variables
       shell: bash

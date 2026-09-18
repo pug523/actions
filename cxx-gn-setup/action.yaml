@@ -6,6 +6,10 @@ inputs:
     required: true
   llvm_version:
     required: true
+  directory:
+    description: "Directory to install LLVM and Clang binaries to. Defaults to the action default (workspace ./llvm)."
+    required: false
+    default: ""
 
 runs:
   using: "composite"
@@ -15,6 +19,7 @@ runs:
       with:
         os: ${{ inputs.os }}
         llvm_version: ${{ inputs.llvm_version }}
+        directory: ${{ inputs.directory }}
 
     - name: Setup gn
       uses: pug523/actions/setup-gn@main
