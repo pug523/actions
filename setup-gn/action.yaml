@@ -18,36 +18,41 @@ runs:
     - name: Check out GN source
       shell: bash
       run: |
-        if [ ! -d "gn" ]; then
-          git clone https://gn.googlesource.com/gn gn
+        SRC_DIR="${{ runner.temp }}/gn-src"
+        if [ ! -d "$SRC_DIR" ]; then
+          git clone https://gn.googlesource.com/gn "$SRC_DIR"
         fi
 
-    - name: Cache GN build output
+    - name: Cache GN binary
       id: cache-gn
       uses: actions/cache@3edfce9056124e459a23f683a21433670d47daca
       with:
-        path: gn/out
-        key: ${{ runner.os }}-gn-${{ hashFiles('gn/build/**', 'gn/tools/**') }}
+        path: ${{ runner.temp }}/gn-bin
+        key: ${{ runner.os }}-gn-bin-${{ hashFiles(format('{0}/gn-src/build/**', runner.temp), format('{0}/gn-src/tools/**', runner.temp)) }}
         restore-keys: |
-          ${{ runner.os }}-gn-
+          ${{ runner.os }}-gn-bin-
 
     - name: Build GN (Linux / macOS)
       if: steps.cache-gn.outputs.cache-hit != 'true' && runner.os != 'Windows'
       shell: bash
       run: |
-        cd gn
+        mkdir -p "${{ runner.temp }}/gn-bin"
+        cd "${{ runner.temp }}/gn-src"
         uv run build/gen.py --allow-warning
         ninja -C out gn
+        cp out/gn "${{ runner.temp }}/gn-bin/gn"
 
     - name: Build GN (Windows)
       if: steps.cache-gn.outputs.cache-hit != 'true' && runner.os == 'Windows'
       shell: cmd
       run: |
-        cd gn
+        if not exist "${{ runner.temp }}\gn-bin" mkdir "${{ runner.temp }}\gn-bin"
+        cd /d "${{ runner.temp }}\gn\src"
         uv run build/gen.py --allow-warning
         ninja -C out gn.exe
+        copy out\gn.exe "${{ runner.temp }}\gn-bin\gn.exe"
 
     - name: Setup environment variables
       shell: bash
       run: |
-        echo "$GITHUB_WORKSPACE/gn/out" >> $GITHUB_PATH
+        echo "${{ runner.temp }}/gn-bin" >> $GITHUB_PATH
