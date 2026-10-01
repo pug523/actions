@@ -1,6 +1,16 @@
 name: "Setup GN"
 description: "Builds, installs, and caches GN"
 
+inputs:
+  gn_revision:
+    description: "GN revision to build. Accepts a commit SHA, or 'main' to track upstream HEAD. Defaults to a pinned known-good revision so the cache key stays stable."
+    required: false
+    default: "054c9865a0fe4074122022bfd4458fc08305a1d5"
+  allow_stale_cache:
+    description: "When the exact revision is not cached, reuse the most recently cached GN binary for this OS instead of rebuilding. Set to 'false' to require an exact revision match."
+    required: false
+    default: "true"
+
 runs:
   using: "composite"
   steps:
@@ -15,31 +25,85 @@ runs:
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
 
-    - name: Check out GN source
-      shell: bash
-      run: |
-        SRC_DIR="$RUNNER_TEMP/gn-src"
-
-        if [ ! -d "$SRC_DIR/.git" ]; then
-          git clone https://gn.googlesource.com/gn "$SRC_DIR"
-        fi
-
-    - name: Get GN revision
+    # Resolved before touching the cache so a pinned revision needs no clone at all,
+    # and so 'main' can be looked up with ls-remote instead of a full clone.
+    - name: Resolve GN revision
       id: gn-revision
       shell: bash
+      env:
+        GN_REVISION: ${{ inputs.gn_revision }}
       run: |
-        cd "$RUNNER_TEMP/gn-src"
-        echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        set -euo pipefail
+
+        if [ "$GN_REVISION" = "main" ]; then
+          sha=$(git ls-remote https://gn.googlesource.com/gn refs/heads/main | cut -f1)
+        else
+          sha="$GN_REVISION"
+        fi
+
+        echo "Building GN revision $sha"
+        echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
     - name: Cache GN binary
       id: cache-gn
       uses: actions/cache@3edfce9056124e459a23f683a21433670d47daca
       with:
         path: ${{ runner.temp }}/gn-bin
-        key: ${{ runner.os }}-gn-bin-${{ steps.gn-revision.outputs.sha }}
+        key: ${{ runner.os }}-gn-${{ steps.gn-revision.outputs.sha }}-bin
+        # Falls back to the newest cached GN for this OS. Only applied when the
+        # caller allows it, since it can hand back a different revision than asked.
+        restore-keys: |
+          ${{ runner.os }}-gn-
+
+    # Decided from the binary on disk rather than the cache-hit output: a
+    # restore-keys hit reports cache-hit=false but still provides a usable binary.
+    - name: Check for usable GN binary
+      id: check-gn
+      shell: bash
+      env:
+        ALLOW_STALE_CACHE: ${{ inputs.allow_stale_cache }}
+      run: |
+        set -euo pipefail
+
+        gn_bin="$RUNNER_TEMP/gn-bin/gn"
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          gn_bin="$RUNNER_TEMP/gn-bin/gn.exe"
+        fi
+
+        if [ -x "$gn_bin" ] || [ -f "$gn_bin" ]; then
+          if [ "$ALLOW_STALE_CACHE" = "true" ]; then
+            echo "Using cached GN from $gn_bin"
+            echo "needs-build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Cached GN is present but allow_stale_cache is false; rebuilding." >&2
+            rm -rf "$RUNNER_TEMP/gn-bin"
+            echo "needs-build=true" >> "$GITHUB_OUTPUT"
+          fi
+        else
+          echo "needs-build=true" >> "$GITHUB_OUTPUT"
+        fi
+
+    # Only reached when a build is actually needed. Full clone because gen.py
+    # runs `git describe`, which needs the tags.
+    - name: Check out GN source
+      if: steps.check-gn.outputs.needs-build == 'true'
+      shell: bash
+      env:
+        GN_SHA: ${{ steps.gn-revision.outputs.sha }}
+      run: |
+        set -euo pipefail
+
+        SRC_DIR="$RUNNER_TEMP/gn-src"
+
+        if [ ! -d "$SRC_DIR/.git" ]; then
+          git clone https://gn.googlesource.com/gn "$SRC_DIR"
+        fi
+
+        cd "$SRC_DIR"
+        git checkout --force "$GN_SHA"
 
     - name: Build GN (Linux / macOS)
-      if: steps.cache-gn.outputs.cache-hit != 'true' && runner.os != 'Windows'
+      if: steps.check-gn.outputs.needs-build == 'true' && runner.os != 'Windows'
       shell: bash
       run: |
         GN_SRC="$RUNNER_TEMP/gn-src"
@@ -54,7 +118,7 @@ runs:
         cp out/gn "$GN_BIN/gn"
 
     - name: Build GN (Windows)
-      if: steps.cache-gn.outputs.cache-hit != 'true' && runner.os == 'Windows'
+      if: steps.check-gn.outputs.needs-build == 'true' && runner.os == 'Windows'
       shell: cmd
       run: |
         if not exist "%RUNNER_TEMP%\gn-bin" mkdir "%RUNNER_TEMP%\gn-bin"
