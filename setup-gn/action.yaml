@@ -49,14 +49,13 @@ runs:
       uses: actions/cache@3edfce9056124e459a23f683a21433670d47daca
       with:
         path: ${{ runner.temp }}/gn-bin
-        key: ${{ runner.os }}-gn-${{ steps.gn-revision.outputs.sha }}-bin
-        # Falls back to the newest cached GN for this OS. Only applied when the
-        # caller allows it, since it can hand back a different revision than asked.
+        key: ${{ runner.os }}-${{ runner.arch }}-gn-${{ steps.gn-revision.outputs.sha }}-bin
+        # Falls back to the newest cached GN for this OS and architecture.
         restore-keys: |
-          ${{ runner.os }}-gn-
+          ${{ runner.os }}-${{ runner.arch }}-gn-
 
     # Decided from the binary on disk rather than the cache-hit output: a
-    # restore-keys hit reports cache-hit=false but still provides a usable binary.
+    # restore-keys hit reports cache-hit=false but still provides a binary.
     - name: Check for usable GN binary
       id: check-gn
       shell: bash
@@ -70,7 +69,7 @@ runs:
           gn_bin="$RUNNER_TEMP/gn-bin/gn.exe"
         fi
 
-        if [ -x "$gn_bin" ] || [ -f "$gn_bin" ]; then
+        if [ -f "$gn_bin" ] && "$gn_bin" --version >/dev/null 2>&1; then
           if [ "$ALLOW_STALE_CACHE" = "true" ]; then
             echo "Using cached GN from $gn_bin"
             echo "needs-build=false" >> "$GITHUB_OUTPUT"
@@ -79,6 +78,10 @@ runs:
             rm -rf "$RUNNER_TEMP/gn-bin"
             echo "needs-build=true" >> "$GITHUB_OUTPUT"
           fi
+        elif [ -f "$gn_bin" ]; then
+          echo "Cached GN at $gn_bin cannot run here; rebuilding." >&2
+          rm -rf "$RUNNER_TEMP/gn-bin"
+          echo "needs-build=true" >> "$GITHUB_OUTPUT"
         else
           echo "needs-build=true" >> "$GITHUB_OUTPUT"
         fi
