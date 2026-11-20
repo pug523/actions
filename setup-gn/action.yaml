@@ -3,9 +3,9 @@ description: "Builds, installs, and caches GN"
 
 inputs:
   llvm_version:
-    description: "LLVM version used to build GN when the binary cache misses."
+    description: "LLVM version used to build GN when the binary cache misses. 20.1.7 has assets on every platform the build matrix names."
     required: false
-    default: "23.1.5"
+    default: "20.1.7"
   gn_revision:
     description: "GN revision to build. Accepts a commit SHA, or 'main' to track upstream HEAD. Defaults to a pinned known-good revision so the cache key stays stable."
     required: false
