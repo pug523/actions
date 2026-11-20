@@ -2,6 +2,10 @@ name: "Setup GN"
 description: "Builds, installs, and caches GN"
 
 inputs:
+  llvm_version:
+    description: "LLVM version used to build GN when the binary cache misses."
+    required: false
+    default: "23.1.5"
   gn_revision:
     description: "GN revision to build. Accepts a commit SHA, or 'main' to track upstream HEAD. Defaults to a pinned known-good revision so the cache key stays stable."
     required: false
@@ -86,6 +90,18 @@ runs:
           echo "needs-build=true" >> "$GITHUB_OUTPUT"
         fi
 
+    # A cache miss needs a compiler with C++23's std::expected; the
+    # system toolchain on the runners does not always have one. Install
+    # the pinned LLVM from the action's own input so setup-gn works on
+    # its own, in a workflow that never installs LLVM for its build.
+    - name: Install LLVM for GN build
+      if: steps.check-gn.outputs.needs-build == 'true' && runner.os != 'Windows'
+      uses: pug523/install-llvm-action@50bd5e5c6d08c532b5bec0d6470e072fb38b2014
+      with:
+        version: ${{ inputs.llvm_version }}
+        directory: ${{ runner.temp }}/gn-llvm
+        env: true
+
     # Only reached when a build is actually needed. Full clone because gen.py
     # runs `git describe`, which needs the tags.
     - name: Check out GN source
@@ -108,6 +124,9 @@ runs:
     - name: Build GN (Linux / macOS)
       if: steps.check-gn.outputs.needs-build == 'true' && runner.os != 'Windows'
       shell: bash
+      env:
+        CXXFLAGS: -stdlib=libc++
+        LDFLAGS: -stdlib=libc++
       run: |
         GN_SRC="$RUNNER_TEMP/gn-src"
         GN_BIN="$RUNNER_TEMP/gn-bin"
