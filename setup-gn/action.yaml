@@ -25,14 +25,13 @@ runs:
         version: 0.11.32
         enable-cache: true
 
+    # GN's build_config.h does not name MSVC's _M_ARM64, so GN itself is
+    # built for x64 and runs under Windows on ARM's x64 emulation. The
+    # arm64 toolchain is exported after GN is done, for the build that
+    # follows this action.
     - name: Initialize MSVC Developer Command Prompt
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
-      with:
-        # The default x64 prompt gives lld x64 import libraries while
-        # alcy's objects on the arm64 runner are arm64. Point LIB and the
-        # tool path at the arm64 target instead.
-        arch: ${{ runner.arch == 'ARM64' && 'amd64_arm64' || 'x64' }}
 
     # Resolved before touching the cache so a pinned revision needs no clone at all,
     # and so 'main' can be looked up with ls-remote instead of a full clone.
@@ -160,3 +159,9 @@ runs:
       shell: bash
       run: |
         echo "$RUNNER_TEMP/gn-bin" >> "$GITHUB_PATH"
+
+    - name: Export the arm64 MSVC environment for the build
+      if: runner.os == 'Windows' && runner.arch == 'ARM64'
+      uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+      with:
+        arch: amd64_arm64
