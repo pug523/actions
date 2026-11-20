@@ -22,7 +22,7 @@ runs:
         enable-cache: true
 
     - name: Install LLVM tools
-      uses: pug523/install-llvm-action@50bd5e5c6d08c532b5bec0d6470e072fb38b2014
+      uses: pug523/install-llvm-action@576f70b6adba4802f0c2952399669d061cc1b94c
       with:
         # https://github.com/pug523/install-llvm-action/blob/master/assets.json
         version: ${{ inputs.llvm_version }}

@@ -96,7 +96,7 @@ runs:
     # its own, in a workflow that never installs LLVM for its build.
     - name: Install LLVM for GN build
       if: steps.check-gn.outputs.needs-build == 'true' && runner.os != 'Windows'
-      uses: pug523/install-llvm-action@50bd5e5c6d08c532b5bec0d6470e072fb38b2014
+      uses: pug523/install-llvm-action@576f70b6adba4802f0c2952399669d061cc1b94c
       with:
         version: ${{ inputs.llvm_version }}
         directory: ${{ runner.temp }}/gn-llvm
