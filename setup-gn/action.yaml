@@ -138,7 +138,12 @@ runs:
         mkdir -p "$GN_BIN"
 
         cd "$GN_SRC"
-        uv run build/gen.py --allow-warning
+        # gen.py adds -static-libstdc++ on Linux while CXXFLAGS asks for
+        # libc++. The two disagree about operator new and the exception
+        # ABI, so GN's link fails with undefined libc++abi symbols. Let
+        # clang link libc++ and libc++abi from the toolchain above. The
+        # flag is a no-op on macOS, where gen.py adds no such flag.
+        uv run build/gen.py --allow-warning --no-static-libstdc++
         ninja -C out gn
 
         cp out/gn "$GN_BIN/gn"
