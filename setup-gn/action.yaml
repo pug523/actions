@@ -161,11 +161,13 @@ runs:
         # libraries at runtime. The install keeps them in both lib/ and
         # the target triple's directory, so record both in gn itself:
         # later steps should not have to inherit a library path just to
-        # run a GN command.
+        # run a GN command. Use DT_RPATH rather than the default DT_RUNPATH:
+        # libc++.so needs libunwind.so, and RUNPATH is not inherited by
+        # the dependencies of the binary that carries it.
         if [ "${{ runner.os }}" = "Linux" ]; then
           GN_LIB="$RUNNER_TEMP/gn-llvm/lib"
           GN_TRIPLE="$("$RUNNER_TEMP/gn-llvm/bin/clang" -dumpmachine)"
-          export LDFLAGS="$LDFLAGS -Wl,-rpath,$GN_LIB -Wl,-rpath,$GN_LIB/$GN_TRIPLE"
+          export LDFLAGS="$LDFLAGS -Wl,--disable-new-dtags -Wl,-rpath,$GN_LIB -Wl,-rpath,$GN_LIB/$GN_TRIPLE"
         fi
         uv run build/gen.py --allow-warning --no-static-libstdc++
         ninja -C out gn
