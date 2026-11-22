@@ -166,21 +166,32 @@ runs:
       if: steps.check-gn.outputs.needs-build == 'true' && runner.os != 'Windows'
       shell: bash
       run: |
-        # install-llvm-action put GN's bin on GITHUB_PATH; take that one
-        # entry back so the caller's clang stays first for the build.
-        if [ -f "$GITHUB_PATH" ]; then
+        # Put back only what the caller had. A workflow that calls this
+        # action on its own has no toolchain of its own: the LLVM used to
+        # build GN is also the one later steps need, and the gn binary
+        # itself loads its shared libraries from it.
+        if [ -n "$SETUP_GN_SAVED_LLVM_PATH" ]; then
+          echo "LLVM_PATH=${SETUP_GN_SAVED_LLVM_PATH}" >> "$GITHUB_ENV"
+        fi
+        if [ -n "$SETUP_GN_SAVED_CC" ]; then
+          echo "CC=${SETUP_GN_SAVED_CC}" >> "$GITHUB_ENV"
+        fi
+        if [ -n "$SETUP_GN_SAVED_CXX" ]; then
+          echo "CXX=${SETUP_GN_SAVED_CXX}" >> "$GITHUB_ENV"
+        fi
+        if [ -n "$SETUP_GN_SAVED_LD_LIBRARY_PATH" ]; then
+          echo "LD_LIBRARY_PATH=${SETUP_GN_SAVED_LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+        fi
+        if [ -n "$SETUP_GN_SAVED_DYLD_LIBRARY_PATH" ]; then
+          echo "DYLD_LIBRARY_PATH=${SETUP_GN_SAVED_DYLD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+        fi
+        # GITHUB_PATH is applied after GITHUB_ENV. Only when the caller
+        # had a toolchain does its bin belong ahead of GN's on PATH.
+        if [ -n "$SETUP_GN_SAVED_LLVM_PATH" ] && [ -f "$GITHUB_PATH" ]; then
           grep -v 'gn-llvm/bin' "$GITHUB_PATH" > "$GITHUB_PATH.restore" || true
           mv "$GITHUB_PATH.restore" "$GITHUB_PATH"
+          echo "${SETUP_GN_SAVED_LLVM_PATH}/bin" >> "$GITHUB_PATH"
         fi
-        echo "LLVM_PATH=${SETUP_GN_SAVED_LLVM_PATH}" >> "$GITHUB_ENV"
-        echo "CC=${SETUP_GN_SAVED_CC}" >> "$GITHUB_ENV"
-        echo "CXX=${SETUP_GN_SAVED_CXX}" >> "$GITHUB_ENV"
-        echo "LD_LIBRARY_PATH=${SETUP_GN_SAVED_LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
-        echo "DYLD_LIBRARY_PATH=${SETUP_GN_SAVED_DYLD_LIBRARY_PATH}" >> "$GITHUB_ENV"
-        # GITHUB_PATH is applied after GITHUB_ENV, so put the saved
-        # toolchain's bin back at the front of PATH as well: callers that
-        # invoke a bare `clang++` would otherwise pick GN's compiler.
-        echo "${SETUP_GN_SAVED_LLVM_PATH}/bin" >> "$GITHUB_PATH"
 
     - name: Build GN (Windows)
       if: steps.check-gn.outputs.needs-build == 'true' && runner.os == 'Windows'
